@@ -392,59 +392,7 @@ class RecordList extends AbstractModule
             $listUrl = $dblist->listURL();
             // Add JavaScript functions to the page:
 
-            $this->moduleTemplate->addJavaScriptCode(
-                'RecordListInlineJS',
-                '
-				function jumpExt(URL,anchor) {	//
-					var anc = anchor?anchor:"";
-					window.location.href = URL+(T3_THIS_LOCATION?"&returnUrl="+T3_THIS_LOCATION:"")+anc;
-					return false;
-				}
-				function jumpSelf(URL) {	//
-					window.location.href = URL+(T3_RETURN_URL?"&returnUrl="+T3_RETURN_URL:"");
-					return false;
-				}
-				function jumpToUrl(URL) {
-					window.location.href = URL;
-					return false;
-				}
-
-				function setHighlight(id) {	//
-					top.fsMod.recentIds["web"]=id;
-					top.fsMod.navFrameHighlightedID["web"]="pages"+id+"_"+top.fsMod.currentBank;	// For highlighting
-
-					if (top.nav_frame && top.nav_frame.refresh_nav) {
-						top.nav_frame.refresh_nav();
-					}
-				}
-				' . $this->moduleTemplate->redirectUrls($listUrl) . '
-				' . $dblist->CBfunctions() . '
-				function editRecords(table,idList,addParams,CBflag) {	//
-					window.location.href="' . BackendUtility::getModuleUrl('record_edit', ['returnUrl' => GeneralUtility::getIndpEnv('REQUEST_URI')]) . '&edit["+table+"]["+idList+"]=edit"+addParams;
-				}
-				function editList(table,idList) {	//
-					var list="";
-
-						// Checking how many is checked, how many is not
-					var pointer=0;
-					var pos = idList.indexOf(",");
-					while (pos!=-1) {
-						if (cbValue(table+"|"+idList.substr(pointer,pos-pointer))) {
-							list+=idList.substr(pointer,pos-pointer)+",";
-						}
-						pointer=pos+1;
-						pos = idList.indexOf(",",pointer);
-					}
-					if (cbValue(table+"|"+idList.substr(pointer))) {
-						list+=idList.substr(pointer)+",";
-					}
-
-					return list ? list : idList;
-				}
-
-				if (top.fsMod) top.fsMod.recentIds["web"] = ' . (int)$this->id . ';
-			'
-            );
+            $this->moduleTemplate->addJavaScriptCode('RecordListInlineJS', $this->getRecordListInlineJS());
 
             // Setting up the context sensitive menu:
             $this->moduleTemplate->getPageRenderer()->loadRequireJsModule('TYPO3/CMS/Backend/ContextMenu');
@@ -585,6 +533,74 @@ class RecordList extends AbstractModule
         $this->moduleTemplate->setContent($this->content);
         $response->getBody()->write($this->moduleTemplate->renderContent());
         return $response;
+    }
+
+    public function getRecordListInlineJS() {
+        return $this->getJumpExtJS()
+                . $this->getJumpSelfJS()
+                . $this->getJumpToUrlJS()
+                . $this->getSetHighlightJS()
+                . $this->getEditRecordsJS()
+                . $this->getEditListJS()
+                . $this->moduleTemplate->redirectUrls($listUrl)
+                . $dblist->CBfunctions()
+                . 'if (top.fsMod) top.fsMod.recentIds["web"] = ' . (int)$this->id;
+    }
+    
+    public function getJumpExtJS() {
+        return 'function jumpExt(URL,anchor) {
+                    var anc = anchor?anchor:"";
+                    window.location.href = URL+(T3_THIS_LOCATION?"&returnUrl="+T3_THIS_LOCATION:"")+anc;
+                    return false;
+                }';
+    }
+    public function getJumpSelfJS() {
+        return 'function jumpSelf(URL) {
+                    window.location.href = URL+(T3_RETURN_URL?"&returnUrl="+T3_RETURN_URL:"");
+                    return false;
+                }';
+    }
+    public function getJumpToUrlJS() {
+        return 'function jumpToUrl(URL) {
+                    window.location.href = URL;
+                    return false;
+                }';
+    }
+    public function getSetHighlightJS() {
+        return 'function setHighlight(id) {
+                    top.fsMod.recentIds["web"]=id;
+                    top.fsMod.navFrameHighlightedID["web"]="pages"+id+"_"+top.fsMod.currentBank;	// For highlighting
+
+                    if (top.nav_frame && top.nav_frame.refresh_nav) {
+                        top.nav_frame.refresh_nav();
+                    }
+                }';
+    }
+    public function getEditRecordsJS() {
+        return 'function editRecords(table,idList,addParams,CBflag) {	//
+                    window.location.href="' . BackendUtility::getModuleUrl('record_edit', ['returnUrl' => GeneralUtility::getIndpEnv('REQUEST_URI')]) . '&edit["+table+"]["+idList+"]=edit"+addParams;
+                }';
+    }
+    public function getEditListJS() {
+        return 'function editList(table,idList) {	//
+                    var list="";
+
+                        // Checking how many is checked, how many is not
+                    var pointer=0;
+                    var pos = idList.indexOf(",");
+                    while (pos!=-1) {
+                        if (cbValue(table+"|"+idList.substr(pointer,pos-pointer))) {
+                            list+=idList.substr(pointer,pos-pointer)+",";
+                        }
+                        pointer=pos+1;
+                        pos = idList.indexOf(",",pointer);
+                    }
+                    if (cbValue(table+"|"+idList.substr(pointer))) {
+                        list+=idList.substr(pointer)+",";
+                    }
+
+                    return list ? list : idList;
+                }';
     }
 
     /**
